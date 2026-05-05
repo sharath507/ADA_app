@@ -24,6 +24,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class AssistantService : LifecycleService() {
@@ -82,7 +83,16 @@ class AssistantService : LifecycleService() {
                     onAudioData = { bytes ->
                         overlayUi?.setState(OverlayUi.State.SPEAKING)
                         AssistantBus.uiState.value = AssistantBus.UiState.SPEAKING
+                        micStreamer?.pauseStreaming()
                         pcmPlayer?.writePcm(bytes)
+                        serviceScope.launch {
+                            delay(750)
+                            micStreamer?.resumeStreaming()
+                            if (AssistantBus.uiState.value != AssistantBus.UiState.OFFLINE) {
+                                overlayUi?.setState(OverlayUi.State.LISTENING)
+                                AssistantBus.uiState.value = AssistantBus.UiState.LISTENING
+                            }
+                        }
                     },
                     onTranscription = { sender, text ->
                         AssistantBus.transcript.tryEmit(AssistantBus.TranscriptLine(sender = sender, text = text))

@@ -17,7 +17,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.ada.service.AssistantService
 import com.example.ada.state.AssistantBus
+import com.example.ada.state.VisionBus
 import com.example.ada.ui.JarvisLottieView
+import com.example.ada.ui.JarvisFaceView
 import com.example.ada.ui.SettingsActivity
 import com.example.ada.vision.CameraVisionActivity
 import androidx.lifecycle.lifecycleScope
@@ -44,13 +46,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         val header = TextView(this).apply {
-            text = "ADA Android Client"
-            textSize = 18f
+            text = "JARVIS"
+            textSize = 22f
             gravity = Gravity.CENTER_HORIZONTAL
         }
 
         val stateView = TextView(this).apply {
             text = "State: OFFLINE"
+        }
+
+        val visionView = TextView(this).apply {
+            text = "Vision: OFF"
         }
 
         val backendUrlView = TextView(this).apply {
@@ -66,6 +72,7 @@ class MainActivity : AppCompatActivity() {
             addView(transcriptText)
         }
 
+        val faceView = JarvisFaceView(this)
         val jarvisView = JarvisLottieView(this)
 
         val requestOverlayBtn = Button(this).apply {
@@ -95,7 +102,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val visionBtn = Button(this).apply {
-            text = "Open Vision (CameraX)"
+            text = "Vision"
             setOnClickListener {
                 startActivity(Intent(this@MainActivity, CameraVisionActivity::class.java))
             }
@@ -110,7 +117,12 @@ class MainActivity : AppCompatActivity() {
 
         content.addView(header)
         content.addView(stateView)
+        content.addView(visionView)
         content.addView(backendUrlView)
+        content.addView(faceView, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            (260 * resources.displayMetrics.density).toInt()
+        ))
         content.addView(jarvisView, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             (220 * resources.displayMetrics.density).toInt()
@@ -141,6 +153,12 @@ class MainActivity : AppCompatActivity() {
                     AssistantBus.uiState.collect { st ->
                         stateView.text = "State: ${st.name}"
                         jarvisView.setState(st.name)
+                        faceView.setState(st.name)
+                    }
+                }
+                launch {
+                    VisionBus.isStreaming.collect { enabled ->
+                        visionView.text = if (enabled) "Vision: ON" else "Vision: OFF"
                     }
                 }
                 launch {
